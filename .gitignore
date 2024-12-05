@@ -1,0 +1,10 @@
+*
+
+!.gitignore
+!README.md
+
+!server/
+!server/**/*
+
+!client/
+!client/**/*

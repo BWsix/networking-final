@@ -1,0 +1,12 @@
+*
+
+!.gitignore
+!README.md
+
+!requirements.txt
+
+!app/
+!app/*.py
+
+!framework/
+!framework/*.py
