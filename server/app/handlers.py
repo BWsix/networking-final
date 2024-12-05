@@ -125,13 +125,12 @@ def login_user(ctx: Ctx, req: Request) -> Response:
             "User not found", status=framework.Status_404_NOT_FOUND
         )
 
-    if utils.verify_password(credentials.get_hashed_password(), user.hashed_password):
+    if not utils.verify_password(credentials.password.get_secret_value(), user.hashed_password):
         return Response.from_text(
             "Invalid password", status=framework.Status_401_UNAUTHORIZED
         )
 
     dumped_user = json.dumps(user.model_dump(exclude={"hashed_password"}))
 
-    res = Response.from_text("OK")
-    res.set_cookie("token", utils.build_jwt(dumped_user))
+    res = Response.from_json({"jwt": utils.build_jwt(dumped_user)})
     return res

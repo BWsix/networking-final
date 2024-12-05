@@ -9,11 +9,8 @@ class Credentials(DbDumper):
     username: str
     password: SecretStr
 
-    def get_hashed_password(self) -> str:
-        return utils.hash_password(self.password.get_secret_value())
-
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
 
@@ -25,7 +22,7 @@ class User(DbDumper):
     hashed_password: Annotated[str | None, Field(default=None)]
 
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
 
@@ -34,7 +31,7 @@ class CreateUser(User):
     password: SecretStr
 
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
 
@@ -46,6 +43,6 @@ class Post(DbDumper):
     author_id: RequiredId
 
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}

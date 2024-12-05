@@ -17,3 +17,4 @@ python -m app.main
 - https://github.com/rexim/tore
 - https://github.com/fuszti/pydantic-mongodb-id-example
 - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie
+- https://developer.mozilla.org/en-US/docs/Glossary/Preflight_request

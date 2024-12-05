@@ -17,6 +17,7 @@ Middleware = typing.Callable[["Ctx", "Request"], typing.Optional["Response"]]
 
 Status = collections.namedtuple("Status", ["code", "message"])
 Status_200_OK = Status(200, "OK")
+Status_302_FOUND = Status(302, "Found")
 Status_400_BAD_REQUEST = Status(400, "Bad Request")
 Status_401_UNAUTHORIZED = Status(401, "Unauthorized")
 Status_403_FORBIDDEN = Status(403, "Forbidden")
@@ -107,7 +108,7 @@ class Response:
             self.headers["Set-Cookie"] = ""
         self.headers[
             "Set-Cookie"
-        ] += f"{key}={value}; Max-Age={expires}; Path=/; HttpOnly; Secure"
+        ] += f"{key}={value}; Max-Age={expires}; Path=/; HttpOnly; SameSite=None; Secure\r\n"
 
     def to_bytes(self) -> bytes:
         """
@@ -117,6 +118,10 @@ class Response:
         """
 
         _body = f"HTTP/1.1 {self.status.code} {self.status.message}\r\n"
+        _body += f"Access-Control-Allow-Origin: *\r\n"
+        _body += f"Access-Control-Allow-Credentials: true\r\n"
+        _body += f"Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS\r\n"
+        _body += f"Access-Control-Allow-Headers: Content-Type, Authorization, Cookie, Set-Cookie, Origin\r\n"
         _body += f"Content-Type: {self.content_type}\r\n"
         _body += f"Content-Length: {len(self.body)}\r\n"
         for key, value in self.headers.items():
@@ -132,7 +137,7 @@ class Response:
         :param connection_socket: The socket to send the response to.
         """
 
-        connection_socket.send(self.to_bytes())
+        connection_socket.sendall(self.to_bytes())
 
 
 @dataclasses.dataclass
@@ -166,6 +171,8 @@ class Request:
 
         if _headers.get("Content-Type", "") == "application/json":
             _body = json.loads(_body) if _body else None
+        elif _headers.get("Content-Type", "") == "application/x-www-form-urlencoded":
+            _body = dict([param.split("=") for param in _body.split("&")]) if _body else None
 
         _cookies = dict()
         if "Cookie" in _headers:
@@ -207,12 +214,13 @@ class Request:
 class Router:
     middlewares: list[Handler]
     routes: dict[str, Handler]
-    # Which middlewares should be applied to which routes
+    global_middlewares: list[Middleware]
     route_middlewares: dict[str, list[Middleware]]
 
     def __init__(self):
         self.middlewares = list()
         self.routes = dict()
+        self.global_middlewares = list()
         self.route_middlewares = dict()
 
     @staticmethod
@@ -252,7 +260,10 @@ class Router:
         Register a new middleware. Middlewares will be applied to all routes registered after this.
         """
 
-        self.middlewares.append(middleware)
+        if not self.routes:
+            self.global_middlewares.append(middleware)
+        else:
+            self.middlewares.append(middleware)
 
     def register_route(self, method: str, path: str, handler: Handler) -> None:
         """
@@ -279,6 +290,12 @@ class Router:
         """
 
         ctx = dict()
+
+        for middleware in self.global_middlewares:
+            res = middleware(ctx, req)
+            if res:
+                return res
+
         for middleware in self.route_middlewares.get(req.get_route(), list()):
             res = middleware(ctx, req)
             if res:
@@ -337,15 +354,16 @@ class Server:
         """
 
         while True:
-            connection_socket, client_address = self.server_socket.accept()
-            self.logger.info(f"{client_address}: Connection established")
-
-            message = connection_socket.recv(4096)
-
-            request = Request.from_bytes(message)
-            self.logger.debug(f"{client_address}: Received request: {request}")
-
             try:
+                connection_socket, client_address = self.server_socket.accept()
+                connection_socket.settimeout(2)
+                self.logger.info(f"{client_address}: Connection established")
+
+                message = connection_socket.recv(4096)
+
+                request = Request.from_bytes(message)
+                self.logger.debug(f"{client_address}: Received request: {request}")
+
                 response = self.router.route(request)
             except Exception as e:
                 self.logger.exception(f"{client_address}: {e}")
@@ -353,19 +371,22 @@ class Server:
                     "Internal Server Error", status=Status_500_INTERNAL_SERVER_ERROR
                 )
 
-            self.logger.info(
-                f"{client_address}: Responding with status {response.status}"
-            )
-            self.logger.debug(f"{client_address}: Response: {response.body}")
+            try:
+                self.logger.info(
+                    f"{client_address}: Responding with status {response.status}"
+                )
+                self.logger.info(f"{client_address}: Response: {response.body}")
 
-            self.logger.debug(f"{client_address}: Sending response")
-            response.send(connection_socket)
-            self.logger.debug(f"{client_address}: Response sent")
+                self.logger.info(f"{client_address}: Sending response")
+                response.send(connection_socket)
+                self.logger.info(f"{client_address}: Response sent")
 
-            connection_socket.shutdown(socket.SHUT_WR)
+                connection_socket.shutdown(socket.SHUT_WR)
 
-            # Drain the socket, see: https://blog.netherlabs.nl/articles/2009/01/18/the-ultimate-so_linger-page-or-why-is-my-tcp-not-reliable
-            for _ in range(69420):
-                connection_socket.recv(4096)
+                # Drain the socket, see: https://blog.netherlabs.nl/articles/2009/01/18/the-ultimate-so_linger-page-or-why-is-my-tcp-not-reliable
+                for _ in range(69420):
+                    connection_socket.recv(4096)
 
-            connection_socket.close()
+                connection_socket.close()
+            except Exception:
+                pass
