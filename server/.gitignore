@@ -3,10 +3,8 @@
 !.gitignore
 !README.md
 
+!.env.example
 !requirements.txt
 
 !app/
 !app/*.py
-
-!framework/
-!framework/*.py
