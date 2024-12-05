@@ -332,7 +332,14 @@ class Server:
             request = Request.from_bytes(message)
             self.logger.debug(f"{client_address}: Received request: {request}")
 
-            response = self.router.route(request)
+            try:
+                response = self.router.route(request)
+            except Exception as e:
+                self.logger.exception(f"{client_address}: {e}")
+                response = Response.from_text(
+                    "Internal Server Error", status=Status_500_INTERNAL_SERVER_ERROR
+                )
+
             self.logger.info(
                 f"{client_address}: Responding with status {response.status}"
             )
