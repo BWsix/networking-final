@@ -8,10 +8,28 @@ from pydantic import ValidationError
 repo = repository.MongoRepository()
 
 
+def get_me(ctx: Ctx, req: Request) -> Response:
+    """
+    Return the current user.
+
+    Response body:
+    ```json
+    {
+        "id": "string",
+        "username": "string",
+        "email": "string"
+    }
+    ```
+    """
+
+    user: models.User = ctx.get("user")
+    return Response.from_json(user.model_dump(exclude={"hashed_password"}))
+
+
 def get_users(ctx: Ctx, req: Request) -> Response:
     """
     Get all users.
-    
+
     Response body:
     ```json
     [
@@ -31,7 +49,7 @@ def get_users(ctx: Ctx, req: Request) -> Response:
 def create_user(ctx: Ctx, req: Request) -> Response:
     """
     Create a new user.
-    
+
     Request body:
     ```json
     {
@@ -81,7 +99,7 @@ def create_user(ctx: Ctx, req: Request) -> Response:
 def login_user(ctx: Ctx, req: Request) -> Response:
     """
     Login a user. Set a cookie with RAW USER DATA.
-    
+
     Request body:
     ```json
     {
@@ -115,5 +133,5 @@ def login_user(ctx: Ctx, req: Request) -> Response:
     dumped_user = json.dumps(user.model_dump(exclude={"hashed_password"}))
 
     res = Response.from_text("OK")
-    res.set_cookie("user", utils.get_jwt(dumped_user))
+    res.set_cookie("token", utils.build_jwt(dumped_user))
     return res

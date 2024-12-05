@@ -1,16 +1,19 @@
-import socket
-
 import json
 import typing
+import socket
 import logging
 import dataclasses
 import collections
 
 
 Handler = typing.Callable[["Ctx", "Request"], "Response"]
-# Middleware here does not operate like a typical middleware you find in other frameworks, it just takes the request adds some data to the context
-Middleware = typing.Callable[["Ctx", "Request"], None]
-Ctx = typing.Dict[str, typing.Any]
+Ctx = dict[str, typing.Any]
+# Middleware here does not operate like a typical middleware you find in other frameworks:
+#   - it only gets called once before the handler
+#   - its sole task is to modify the context dictionary
+#       - For example, it can be used to authenticate the user and add the user object to the context
+#   - optionally, it can return a response to short-circuit the request, serving as a guard
+Middleware = typing.Callable[["Ctx", "Request"], typing.Optional["Response"]]
 
 Status = collections.namedtuple("Status", ["code", "message"])
 Status_200_OK = Status(200, "OK")
@@ -140,6 +143,7 @@ class Request:
     body: typing.Any
     params: dict[str, str] = dataclasses.field(default_factory=dict)
     headers: dict[str, str] = dataclasses.field(default_factory=dict)
+    cookies: dict[str, str] = dataclasses.field(default_factory=dict)
 
     @staticmethod
     def from_bytes(message: bytes) -> "Request":
@@ -163,6 +167,12 @@ class Request:
         if _headers.get("Content-Type", "") == "application/json":
             _body = json.loads(_body) if _body else None
 
+        _cookies = dict()
+        if "Cookie" in _headers:
+            _cookies = dict(
+                [cookie.split("=") for cookie in _headers["Cookie"].split("; ")]
+            )
+
         return Request(
             method=_method,
             path=_path,
@@ -170,6 +180,7 @@ class Request:
             body=_body,
             headers=_headers,
             params=_params,
+            cookies=_cookies,
         )
 
     def get_route(self) -> str:
@@ -269,7 +280,9 @@ class Router:
 
         ctx = dict()
         for middleware in self.route_middlewares.get(req.get_route(), list()):
-            middleware(ctx, req)
+            res = middleware(ctx, req)
+            if res:
+                return res
         return self.routes.get(req.get_route(), self.not_found)(ctx, req)
 
 
