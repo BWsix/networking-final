@@ -80,11 +80,15 @@ def create_user(ctx: Ctx, req: Request) -> Response:
     except ValidationError as e:
         return Response.validation_error(e.json())
 
-    existed_user = repo.get_user({"username": user.username})
-    if existed_user:
-        return Response.from_text(
-            "User already exists", status=framework.Status_409_CONFLICT
-        )
+    duplicate_field = ""
+    if repo.get_user({"username": user.username}):
+        duplicate_field = "username"
+    if repo.get_user({"email": user.email}):
+        duplicate_field = "email"
+
+    if duplicate_field:
+        body = {"error": f"{duplicate_field.capitalize()} already taken", "field": duplicate_field}
+        return Response.from_json(body, status=framework.Status_409_CONFLICT)
 
     user = repo.create_user(
         models.User(
@@ -125,7 +129,9 @@ def login_user(ctx: Ctx, req: Request) -> Response:
             "User not found", status=framework.Status_404_NOT_FOUND
         )
 
-    if not utils.verify_password(credentials.password.get_secret_value(), user.hashed_password):
+    if not utils.verify_password(
+        credentials.password.get_secret_value(), user.hashed_password
+    ):
         return Response.from_text(
             "Invalid password", status=framework.Status_401_UNAUTHORIZED
         )
