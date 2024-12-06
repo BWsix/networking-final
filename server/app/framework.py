@@ -24,6 +24,7 @@ Status_403_FORBIDDEN = Status(403, "Forbidden")
 Status_404_NOT_FOUND = Status(404, "Not Found")
 Status_409_CONFLICT = Status(409, "Conflict")
 Status_500_INTERNAL_SERVER_ERROR = Status(500, "Internal Server Error")
+Status_504_GATEWAY_TIMEOUT = Status(504, "Gateway Timeout")
 
 
 @dataclasses.dataclass
@@ -359,12 +360,14 @@ class Server:
                 connection_socket.settimeout(2)
                 self.logger.info(f"{client_address}: Connection established")
 
-                message = connection_socket.recv(4096)
+                message = connection_socket.recv(9192)
 
                 request = Request.from_bytes(message)
                 self.logger.debug(f"{client_address}: Received request: {request}")
 
                 response = self.router.route(request)
+            except TimeoutError:
+                response = Response.from_text("Timeout", status=Status_504_GATEWAY_TIMEOUT)
             except Exception as e:
                 self.logger.exception(f"{client_address}: {e}")
                 response = Response.from_text(
