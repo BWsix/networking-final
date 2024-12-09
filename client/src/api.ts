@@ -67,3 +67,22 @@ export function logout() {
     localStorage.removeItem('token');
     window.location.reload();
 }
+
+interface SendMailProps {
+    to: string;
+    subject: string;
+    body: string;
+}
+export async function sendMail(props: SendMailProps) {
+    console.log(`API - sendMail(${props})...`);
+    const res = await api.post('/mail', props);
+    console.log(`API - sendMail(${props}) = ${res}`);
+    return res;
+}
+
+export async function listMails() {
+    console.log(`API - listMails()...`);
+    const res = await api.get('/mails');
+    console.log(`API - listMails() = ${res}`);
+    return res;
+}

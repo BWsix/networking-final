@@ -19,3 +19,4 @@ logging.basicConfig(
 db = logging.getLogger("db")
 app = logging.getLogger("app")
 framework = logging.getLogger("framework")
+mailer = logging.getLogger("mailer")

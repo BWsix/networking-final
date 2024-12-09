@@ -1,6 +1,6 @@
 from app import repository, models, utils
 import json
-from app import framework
+from app import framework, mailer
 from app.framework import Response, Request, Ctx
 from pydantic import ValidationError
 
@@ -87,7 +87,10 @@ def create_user(ctx: Ctx, req: Request) -> Response:
         duplicate_field = "email"
 
     if duplicate_field:
-        body = {"error": f"{duplicate_field.capitalize()} already taken", "field": duplicate_field}
+        body = {
+            "error": f"{duplicate_field.capitalize()} already taken",
+            "field": duplicate_field,
+        }
         return Response.from_json(body, status=framework.Status_409_CONFLICT)
 
     user = repo.create_user(
@@ -140,3 +143,69 @@ def login_user(ctx: Ctx, req: Request) -> Response:
 
     res = Response.from_json({"jwt": utils.build_jwt(dumped_user)})
     return res
+
+
+def send_mail(ctx: Ctx, req: Request) -> Response:
+    """
+    Send an email.
+
+    Request body:
+    ```json
+    {
+        "to": "string",
+        "subject": "string",
+        "body": "string"
+    }
+    ```
+
+    Responses:
+    - 200: Email sent successfully.
+    - 400: Invalid request body.
+    - 500: Email not sent.
+    """
+
+    user: models.User = ctx.get("user")
+
+    try:
+        mailer.send(user.email, req.body["to"], req.body["subject"], req.body["body"])
+
+        mail = models.Mail(
+            user_id=user.id,
+            to=req.body["to"],
+            subject=req.body["subject"],
+            body=req.body["body"],
+        )
+        repo.create_mail(mail)
+
+        return Response.from_text("Email sent")
+    except Exception as e:
+        return Response.from_text(
+            "Email not sent", status=framework.Status_500_INTERNAL_SERVER_ERROR
+        )
+
+def get_mails(ctx: Ctx, req: Request) -> Response:
+    """
+    Get all mails send by the current user.
+
+    Response body:
+    ```json
+    [
+        {
+            "id": "string",
+            "to": "string",
+            "subject": "string",
+            "body": "string"
+        }
+    ]
+    ```
+    """
+
+    user: models.User = ctx.get("user")
+
+    try:
+        mails = [mail.model_dump() for mail in repo.get_mails_by_user_id(user.id)]
+        return Response.from_json(mails)
+    except Exception as e:
+        return Response.from_text(
+            "Unexpected Error", status=framework.Status_500_INTERNAL_SERVER_ERROR
+        )

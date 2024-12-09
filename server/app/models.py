@@ -36,11 +36,12 @@ class CreateUser(User):
         json_encoders = {ObjectId: str}
 
 
-class Post(DbDumper):
+class Mail(DbDumper):
     id: OptionalId
-    title: str
-    content: str
-    author_id: RequiredId
+    to: str
+    subject: str
+    body: str
+    user_id: RequiredId
 
     class Config:
         populate_by_name = True

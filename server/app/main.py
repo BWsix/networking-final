@@ -9,12 +9,15 @@ if __name__ == "__main__":
 
     # public routes
     server.router.register_route("POST", "/user", handlers.create_user)
-    server.router.register_route("GET", "/users", handlers.get_users)
     server.router.register_route("POST", "/login", handlers.login_user)
 
     # protected routes
     server.router.register_middleware(middlewares.inject_user)
     server.router.register_route("GET", "/me", handlers.get_me)
+
+    # mail routes
+    server.router.register_route("GET", "/mails", handlers.get_mails)
+    server.router.register_route("POST", "/mail", handlers.send_mail)
 
     server.bind()
     server.run()

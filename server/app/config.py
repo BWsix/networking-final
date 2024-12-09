@@ -17,6 +17,11 @@ class Settings(BaseSettings):
     MONGODB_URI: str
     MONGODB_DATABASE: str = "networkingfinal"
 
+    MAIL_SERVER: str = "mail.ntust.edu.tw"
+    MAIL_PORT: int = 25
+    MAIL_USERNAME: str
+    MAIL_PASSWORD: str
+
     LOG_LEVEL: str = "DEBUG"
     LOG_FORMAT: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     LOG_FILENAME: str = "server.log"

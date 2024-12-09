@@ -1,5 +1,6 @@
 {
-  "name": "mantine-minimal-next-template",
+  "name": "socket-mailer",
+  "description": "A mail service built from the ground up with Python's built-in socket module.",
   "version": "0.1.0",
   "private": true,
   "scripts": {
