@@ -15,9 +15,11 @@ import { hasLength, useForm } from '@mantine/form';
 import { handleRetry, login } from '../src/api';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from "next/router";
+import { useState } from "react";
 
 export function MyLogin() {
   const router = useRouter();
+  const [submitted, setSubmitted] = useState(false);
 
   const form = useForm({
     mode: 'uncontrolled',
@@ -34,8 +36,7 @@ export function MyLogin() {
     mutationFn: login,
     onSuccess: (data) => {
       localStorage.setItem('token', data.data.jwt);
-      console.log("Login successful", data.data.jwt);
-      router.push("/");
+      router.push("/dashboard");
     },
     retry(failureCount, error) {
       return handleRetry(failureCount, error, (failureCount, error) => {
@@ -71,7 +72,10 @@ export function MyLogin() {
       </Text>
 
       <Paper withBorder shadow="md" p={30} mt={30} radius="md">
-        <form onSubmit={form.onSubmit((props) => loginMutation.mutate(props))}>
+        <form onSubmit={form.onSubmit((props) => {
+            loginMutation.mutate(props);
+            setSubmitted(true);
+        })}>
           <TextInput
             required
             label="Username"
@@ -89,14 +93,7 @@ export function MyLogin() {
             {...form.getInputProps('password')}
           />
 
-          {/* TODO(High priority): implement send email with socket library only */}
-          {/* <Group justify="space-between" mt="lg">
-            <Anchor component="button" size="sm">
-              Forgot password?
-            </Anchor>
-          </Group> */}
-
-          <Button fullWidth mt="xl" type="submit">
+          <Button fullWidth mt="xl" type="submit" disabled={submitted}>
             Sign in
           </Button>
         </form>

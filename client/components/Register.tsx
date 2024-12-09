@@ -15,9 +15,11 @@ import { hasLength, isEmail, useForm } from '@mantine/form';
 import { handleRetry, login, register } from '../src/api';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from "next/router";
+import { useState } from "react";
 
 export function MyRegister() {
   const router = useRouter();
+  const [submitted, setSubmitted] = useState(false);
 
   const form = useForm({
     mode: 'uncontrolled',
@@ -70,7 +72,10 @@ export function MyRegister() {
       </Text>
 
       <Paper withBorder shadow="md" p={30} mt={30} radius="md">
-        <form onSubmit={form.onSubmit((props) => registerMutation.mutate(props))}>
+        <form onSubmit={form.onSubmit((props) => {
+          registerMutation.mutate(props);
+          setSubmitted(true);
+        })}>
           <TextInput
             required
             label="Username"
@@ -97,7 +102,7 @@ export function MyRegister() {
             {...form.getInputProps('password')}
           />
 
-          <Button fullWidth mt="xl" type="submit">
+          <Button fullWidth mt="xl" type="submit" disabled={submitted}>
             Register
           </Button>
         </form>

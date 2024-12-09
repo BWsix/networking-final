@@ -73,6 +73,7 @@ export default function MailsPage() {
 
       {query.isLoading && <p>Loading...</p>}
       {query.isError && <p>{query.error?.message || "Unknown error"}</p>}
+      {query.isSuccess && query.data?.data.length === 0 && "No messages found."}
       {query.isSuccess && (
         ((query.data?.data || []) as Mail[]).map((mail) => <MailCard key={mail.id} mail={mail} user={meQuery.user} />)
       )}
