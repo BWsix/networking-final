@@ -83,8 +83,6 @@ def create_user(ctx: Ctx, req: Request) -> Response:
     duplicate_field = ""
     if repo.get_user({"username": user.username}):
         duplicate_field = "username"
-    if repo.get_user({"email": user.email}):
-        duplicate_field = "email"
 
     if duplicate_field:
         body = {
