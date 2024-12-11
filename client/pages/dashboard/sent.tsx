@@ -27,7 +27,7 @@ function MailCard({ user, mail }: MailCardProps) {
           </Table.Tr>
           <Table.Tr>
             <Table.Td>To</Table.Td>
-            <Table.Td>{user.email}</Table.Td>
+            <Table.Td>{mail.to}</Table.Td>
           </Table.Tr>
           <Table.Tr>
             <Table.Td>Subject</Table.Td>
