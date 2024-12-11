@@ -40,6 +40,8 @@ export function MyLogin() {
     },
     retry(failureCount, error) {
       return handleRetry(failureCount, error, (failureCount, error) => {
+        setSubmitted(false);
+
         // bad input
         if (error.status === 400) {
           form.setErrors({ username: 'Bad input, unexpected error' });
