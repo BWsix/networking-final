@@ -1,5 +1,9 @@
-# Mantine Next Template
+# Web interface for socket mailer
 
-Get started with the template by clicking `Use this template` button on the top of the page.
+### Quick Start
 
-[Documentation](https://mantine.dev/guides/next/)
+```bash
+yarn install
+yarn run build
+yarn start
+```
